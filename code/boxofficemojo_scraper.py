@@ -17,8 +17,9 @@ headers = {'User-Agent':
 
 
 # -- get all movie data
-def all_movie_data(list_letter=['num'] + list(string.lowercase[0:26])):
-    links = get_movie_links(list_letter=list_letter)
+def all_movie_data(list_letter=['num'] + list(string.lowercase[0:26]),
+                   page_limit=99):
+    links = get_movie_links(list_letter=list_letter, page_limit=page_limit)
     print 'got links of', list_letter, ', ', len(links), 'movies in total'
     list_ds = []
     for l in links:
@@ -27,7 +28,8 @@ def all_movie_data(list_letter=['num'] + list(string.lowercase[0:26])):
     return pd.DataFrame(list_ds)
 
 
-def get_movie_links(list_letter=['num'] + list(string.lowercase[0:26])):
+def get_movie_links(list_letter=['num'] + list(string.lowercase[0:26]),
+                    page_limit=99):
     """ collect movie links from boxofficemojo.com
         args: list_letter = ['a', 'b', 'c', ..., 'num'], if not supplied,
               all movie links will be returned
@@ -38,6 +40,8 @@ def get_movie_links(list_letter=['num'] + list(string.lowercase[0:26])):
         page = 1
         links_old = None
         while True:
+            if page > page_limit:
+                break
             url = ('http://www.boxofficemojo.com/movies/alphabetical.htm?'
                    'letter={}&page={}&p=.htm'.format(letter, page))
             print "processing {}".format(url)
