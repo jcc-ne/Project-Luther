@@ -24,7 +24,7 @@ def all_movie_data(list_letter=['num'] + list(string.lowercase[0:26])):
     for l in links:
         m = MovieInfo(l)
         list_ds.append(m.ds)
-    return pd.Dataframe(list_ds)
+    return pd.DataFrame(list_ds)
 
 
 def get_movie_links(list_letter=['num'] + list(string.lowercase[0:26])):
