@@ -4,11 +4,13 @@ import pandas as pd
 import re
 import dateutil.parser as parser
 import string
+import numpy as np
 
 headers = {'User-Agent':
            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) '
            'AppleWebKit/537.36 (KHTML, like Gecko) '
            'Chrome/39.0.2171.95 Safari/537.36'}
+
 # -- get data from one movie
 # resp = requests.get('http://www.the-numbers.com/movie/71-(2014)#tab=summary',
 #                     headers=headers)
@@ -17,13 +19,14 @@ headers = {'User-Agent':
 
 
 # -- get all movie data
-def all_movie_data(list_letter=['num'] + list(string.lowercase[0:26]),
-                   page_limit=99):
+def get_movie_data(list_letter=['num'] + list(string.lowercase[0:26]),
+                   page_limit=99,
+                   flag_raw=False):
     links = get_movie_links(list_letter=list_letter, page_limit=page_limit)
     print 'got links of', list_letter, ', ', len(links), 'movies in total'
     list_ds = []
     for l in links:
-        m = MovieInfo(l)
+        m = MovieInfo(l, flag_raw=flag_raw)
         list_ds.append(m.ds)
     return pd.DataFrame(list_ds)
 
@@ -71,7 +74,7 @@ def get_movie_links(list_letter=['num'] + list(string.lowercase[0:26]),
 # -- process individual movie webpage to return related information
 
 class MovieInfo(object):
-    def __init__(self, link):
+    def __init__(self, link, flag_raw=False):
         url_dom = 'http://www.boxofficemojo.com'
         if re.search(url_dom, link):
             self.link = link
@@ -86,24 +89,28 @@ class MovieInfo(object):
         # -- initial process
         self.get_soup()
         if self.soup:
-            self.process_all_gets()
+            self.process_all_gets(flag_raw=flag_raw)
         else:
             print '{} did not return contents'.format(self.link)
 
-    def process_all_gets(self):
+    def process_all_gets(self, flag_raw=False):
         self.dic_assign_funct = {
             'Domestic:': self._money_to_int,
             'Foreign:': self._money_to_int,
             'Release Date': self._txt_to_date,
             'Close': self._txt_to_date,
             'In Release': lambda x: x,
-            'Budget': lambda x: x,
+            'Budget': self._money_to_int,
             'Runtime': lambda x: x,
             'Distributor': lambda x: x,
             'MPAA': lambda x: x,
             'Widest': lambda x: x,
             'Genre:': lambda x: x,
         }
+        if flag_raw:
+            self.dic_assign_funct = dict().fromkeys(
+                self.dic_assign_funct.keys(), lambda x: x)
+
         self.dic['abslink'] = self.link
         self.get_movie_title()
         for k in self.dic_assign_funct.iterkeys():
@@ -137,7 +144,11 @@ class MovieInfo(object):
         try:
             return int(txt.replace('$', '').replace(',', ''))
         except ValueError:
-            return txt
+            try:
+                return int(txt.replace('$', '').replace(',', '')
+                           .replace('million', '')) * 1e6
+            except ValueError:
+                return np.nan
 
     def _txt_to_date(self, txt):
         try:
@@ -180,4 +191,9 @@ class MovieInfo(object):
             return obj.findParent().findNextSibling().text
 
 
-link = 'http://www.boxofficemojo.com/movies/?id=ateam.htm'
+letter_list = ['num'] + list(string.lowercase[0:26])
+for letter in letter_list:
+#     if letter in ['num', 'a', 'b', 'c']:
+#         continue
+    df = get_movie_data(list_letter=[letter])
+    df.to_pickle('df_{}.pickle'.format(letter))
