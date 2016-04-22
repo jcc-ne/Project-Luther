@@ -74,6 +74,7 @@ def get_movie_links(list_letter=['num'] + list(string.lowercase[0:26]),
 # -- process individual movie webpage to return related information
 
 class MovieInfo(object):
+    unprocessed_urls = []
     def __init__(self, link, flag_raw=False):
         url_dom = 'http://www.boxofficemojo.com'
         if re.search(url_dom, link):
@@ -120,7 +121,13 @@ class MovieInfo(object):
         self.ds = pd.Series(self.dic)
 
     def get_soup(self):
-        resp = requests.get(self.link)
+        try:
+            resp = requests.get(self.link)
+        except (requests.ConnectionError,
+                requests.exceptions.ChunkedEncodingError):
+            print "url {} not working, skipping...".format(self.link)
+            MovieInfo.unprocessed_urls.append(self.link)
+            return None
         if resp.status_code == 200:
             self.content = resp.content
         if self.content:
@@ -193,7 +200,17 @@ class MovieInfo(object):
 
 letter_list = ['num'] + list(string.lowercase[0:26])
 for letter in letter_list:
-#     if letter in ['num', 'a', 'b', 'c']:
-#         continue
+    if letter in ['num', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+                  'k', 'l', 'm', 'n', 'o', 'p', 'q']:
+        continue
     df = get_movie_data(list_letter=[letter])
     df.to_pickle('df_{}.pickle'.format(letter))
+
+# process unprocessed (try)
+print MovieInfo.unprocessed_urls
+list_ds = []
+for l in MovieInfo.unprocessed_urls:
+    m = MovieInfo(l, flag_raw=False)
+    list_ds.append(m.ds)
+df = pd.DataFrame(list_ds)
+df.to_pickle('df_other.pickle')
