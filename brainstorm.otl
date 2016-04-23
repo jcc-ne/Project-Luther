@@ -47,6 +47,12 @@ TASKS
 					box office overall
 				release date
 				runtime
+				hub (when are movies released)
+					from data
+					from US holidays
+				features
+					days before hub
+					days after hub
 			[_] % work frame
 				[_] go thru the movie index, extract each movie
 				[_] for each movie, write function to extract data
