@@ -174,7 +174,7 @@ for g in all_genres:
         dummy_genres[dummy_g] = dummy_genres.get(dummy_g, 0) + 1
 
 
-def get_dummies(ds, prefix=''):
+def get_dummies_str(ds, prefix=''):
     split1 = ds.str.strip().str.split('/', expand=True)
     split2 = split1[0].str.strip().str.split(' ', expand=True)
     df_dum = pd.concat([split1, split2], axis=1)
@@ -189,9 +189,19 @@ def get_dummies(ds, prefix=''):
     return dummies
 
 
+def get_dummies(ds, prefix=''):
+    dummies = pd.get_dummies(df_dum[[1, 2, 3]].stack(),
+                             prefix=prefix).groupby(level=0).sum()
+#     cols = ['{}_{}'.format(prefix, c).strip('_') for c in dummies.columns]
+#     dummies.columns = cols
+    return dummies
+
+
 # <codecell>
 df = df.reset_index()
 df_dum = get_dummies(df['Genre:'], prefix='genre')
+
+
 df2 = pd.concat([df, df_dum], axis=1)
 
 r_formula = ' + '.join(list(df2.columns[df2.columns.str.startswith('genre_')]))
